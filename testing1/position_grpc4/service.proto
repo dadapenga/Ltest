@@ -1,0 +1,134 @@
+syntax="proto3";
+
+package positionProfile;
+option go_package="proto";
+
+import "profile.proto";
+import "nlp_position_profile.proto";
+
+service PositionProfile {
+    // 生成一级维度画像
+    rpc GenAxis1Profile (GenAxis1PositionProfileRequest) returns (GenAxis1PositionProfileResponse) {}
+    // 修复一级维度画像
+    rpc FixAxis1Profile (FixAxis1PositionProfileRequest) returns (FixAxis1PositionProfileResponse) {}
+    // 产生二、三级维度画像
+    rpc GenFullProfile (GenFullPositionProfileRequest) returns (GenFullPositionProfileResponse) {}
+
+    // 一次性产生全量画像
+    rpc GenProfile (GenPositionProfileRequest) returns (GenPositionProfileResponse) {}
+    // 一次性产生全量画像-多路复用
+    rpc GenProfileChannel (stream GenPositionProfileRequest)  returns (stream GenPositionProfileResponse) {}
+
+    // 获取历史画像
+    rpc GetProfile (GetPositionProfileRequest) returns (GetPositionProfileResponse) {}
+    // 获取历史画像-多路复用
+    rpc GetProfileChannel (stream GetPositionProfileRequest)  returns (stream GetPositionProfileResponse) {}
+}
+
+message GenAxis1PositionProfileRequest {
+    // 来源ID-标记业务端-必填项
+    int32 src_id = 1;
+    // 业务端自生成的UUID-必填项
+    string uuid = 2;
+    // 筛选项-职能-必填项
+    string job_func = 3;
+    // 筛选项-地区-必填项
+    int32 plc_id = 4;
+    // 筛选项-工作年限-必填项
+    nlpPositionProfile.WorkDuraType work_dura = 5;
+    // JD 可选项
+    GenPositionProfileRequestJD jd = 6;
+}
+message GenAxis1PositionProfileResponse {
+    int32 err_no = 1;
+    string err_msg = 2;
+    GenAxis1PositionProfileResponseResults results = 3;
+}
+message GenAxis1PositionProfileResponseResults {
+    // 一级维度画像
+    profile.Axis1Profile axis1_profile = 1;
+    // JD解析产生的requirement_profile
+    profile.Axis1Profile requirement_profile = 2;
+}
+
+message FixAxis1PositionProfileRequest {
+    // 来源ID-标记业务端-必填项
+    int32 src_id = 1;
+    // 业务端自生成的UUID-必填项
+    string uuid = 2;
+    // 一级维度画像-修正项-全量覆盖
+    profile.Axis1Profile axis1_profile = 3;
+}
+message FixAxis1PositionProfileResponse {
+    int32 err_no = 1;
+    string err_msg = 2;
+    FixAxis1PositionProfileResponseResults results = 3;
+}
+message FixAxis1PositionProfileResponseResults {
+    // 修正后的一级维度画像
+    profile.Axis1Profile axis1_profile = 1;
+}
+
+message GenFullPositionProfileRequest {
+    // 来源ID-标记业务端-必填项
+    int32 src_id = 1;
+    // 业务端自生成的UUID-必填项
+    string uuid = 2;
+}
+message GenFullPositionProfileResponse {
+    int32 err_no = 1;
+    string err_msg = 2;
+    GenFullPositionProfileResponseResults results = 3;
+}
+message GenFullPositionProfileResponseResults {
+    // 全量画像
+    profile.Profile full_profile = 1;
+}
+
+message GenPositionProfileRequest {
+    // 来源ID-标记业务端-必填项
+    int32 src_id = 1;
+    // 业务端自生成的UUID-可选项（不填则不落地）
+    string uuid = 2;
+    // 筛选项-职能-必填项
+    string job_func = 3;
+    // 筛选项-地区-必填项
+    int32 plc_id = 4;
+    // 筛选项-工作年限-必填项
+    nlpPositionProfile.WorkDuraType work_dura = 5;
+    // JD 可选项
+    GenPositionProfileRequestJD jd = 6;
+}
+
+message GenPositionProfileRequestJD {
+    string description = 1;
+    string requirement = 2;
+    string corporation_name = 3; //发布jd的公司的名字
+}
+
+message GenPositionProfileResponse {
+    int32 err_no = 1;
+    string err_msg = 2;
+    GenPositionProfileResponseResults results = 3;
+}
+message GenPositionProfileResponseResults {
+    // 全量画像
+    profile.Profile full_profile = 1;
+    // JD解析产生的requirement_profile
+    profile.Axis1Profile requirement_profile = 2;
+}
+
+message GetPositionProfileRequest {
+    // 来源ID-标记业务端-必填项
+    int32 src_id = 1;
+    // 业务端自生成的UUID列表-必填项
+    repeated string uuids = 2;
+}
+message GetPositionProfileResponse {
+    int32 err_no = 1;
+    string err_msg = 2;
+    GetPositionProfileResponseResults results = 3;
+}
+message GetPositionProfileResponseResults {
+    map<string, profile.Profile> profiles = 1;
+}

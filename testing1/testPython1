@@ -1,0 +1,181 @@
+# -*- coding: UTF-8 -*-
+# coding=utf-8
+import datetime
+import random
+from random import choice
+
+import xlwt;
+import xlsxwriter
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+import testing1.MyThread
+import unittest
+import json, sys
+import requests
+import  time
+import time
+
+# #接口调用时长
+# start = time.clock()
+# time.sleep(0.1)
+# elapsed = (time.clock() - start)
+# print("Time used:", elapsed)
+
+
+# ! /usr/bin/python
+# encoding : utf-8
+
+
+
+
+
+# 新建一个workbook   写入xls   5000数据写入  员工信息导入
+def writexls(sourcePath):
+    book = xlwt.Workbook(encoding='utf-8', style_compression=0)
+    # 创建一个sheet对象  sheet对象是excel文件中的一张表格
+    sheet = book.add_sheet('sheet1', cell_overwrite_ok=True)
+    # 写入第一个行，第一列的数据
+    # sheet.writerow(["姓名","手机号","员工号","所属门店","微信号"])
+    sheet.write(0, 0, "姓名")
+    sheet.write(0, 1, "手机号")
+    sheet.write(0, 2, "员工号")
+    sheet.write(0, 3, "所属门店")
+    sheet.write(0, 4, "微信号")
+    phoneOri=17100010000
+    for i in range(1000):
+        # sheet.write(["刘鹏"+str(i),str(phoneOri+i),str(random(0,8000)),"五月花门店",str(phoneOri+i)])
+        sheet.write(i+1, 0, "刘鹏"+str(i))
+        sheet.write(i+1, 1, str(phoneOri+i))
+        sheet.write(i+1, 2, str(i))
+        sheet.write(i+1, 3, "五月花门店")
+        sheet.write(i+1, 4, str(phoneOri+i))
+
+    book.save(sourcePath)
+
+if __name__ == '__main__':
+    writexls("data/employeeList.xls")
+
+# 写入xlsx
+def writexlsx(sourcePath):
+    # 建立文件
+    workbook = xlsxwriter.Workbook(sourcePath)
+    # 制定sheet表
+    worksheet = workbook.add_worksheet()
+
+    # 设置列宽
+    # worksheet.set_cols('A:A',10)
+    # 设置字体
+    bold = workbook.add_format({'bold': True})
+    # 写入表
+    worksheet.write('A1', 'testA1', bold)
+    worksheet.write('A2', 'testA2')
+    worksheet.write('B1', 'testB1')
+    worksheet.write('B2', 'testB2')
+
+    # 定义插入的图标样式
+    chart = workbook.add_chart({"type": 'column'})
+    chart.add_series({
+        'name': '=Sheet1!$B$4',
+        'categories': '=Sheet1!$A$5:$A$9',
+        'values': '=Sheet1!$B$5:$B$9',
+    })
+    chart.add_series({
+        'name': ['Sheet1', 3, 2],
+        'categories': ['Sheet1', 4, 0, 8, 0],
+        'values': ['Sheet1', 4, 2, 8, 2],
+    })
+    # 图形的标题
+    chart.set_title({'name': 'Percent Stacked Chart'})
+    # 图形X轴的说明
+    chart.set_x_axis({'name': 'Test number'})
+    # 图形Y轴的说明
+    chart.set_y_axis({'name': 'Sample length (mm)'})
+    # 设置图表风格
+    chart.set_style(11)
+    # 插入图形,带偏移
+    worksheet.insert_chart('D12', chart, {'x_offset': 25, 'y_offset': 10})
+    workbook.close()
+
+
+# 操作openpyxl  写入
+def openpyxlXLSX(j):
+    workbook = Workbook()
+    worksheet = workbook.create_sheet("sheet1", index=0)
+    worksheet.cell(row=1, column=1).value = '姓名'
+    worksheet.cell(row=1, column=2).value = '手机号码'
+    worksheet.cell(row=1, column=3).value = '部门'
+    worksheet.cell(row=1, column=4).value = '职级'
+    worksheet.cell(row=1, column=5).value = '产品'
+    print(1)
+    i = 1
+    phoneNum = 17000000000 + j * 1000000
+    depName = "lp测试部门"
+    posName = "测试"
+    proName = '决胜力'
+    for i in range(800):
+        worksheet.append(["员工" + str(i), phoneNum + i, depName, posName, proName])
+        print(i)
+    workbook.save(filename="test" + str(j) + ".xlsx")
+
+
+# for i in range(2):
+#     # testing1.MyThread.MyThread(openpyxlXLSX,(i,))
+#     openpyxlXLSX(i)
+# sourPathXLSX = "test.xlsx"
+# sourPathXLS = "test.xls"
+# writexls(sourPathXLS)
+# writexlsx(sourPathXLSX)
+
+
+#
+# headers={}
+#
+# class Account(unittest.TestCase):
+#     '''A端开通企业登录帐号'''
+#
+#     def setUp(self):
+#         self.url = "https://bot.testing2.ifchange.com/api/admin/companies/assignproduct"
+#         headers["X"] = "SUu5V7NPXQXzI8wCL95LYV9IkZdnzGfQ"
+#
+#     def test_A_addProduct(self):
+#         self.data = {
+#                 "header": {
+#                 },
+#                 "request": {
+#                     "c": "",
+#                     "m": "",
+#                     "p": {
+#                         "company_id": 3,
+#                         "product_id": 3,
+#                         "deadline": 0,#有效期，设置为0表示永久有效；设置过去马上生效
+#                     }
+#                 }
+#
+#         }
+#         res = requests.post(self.url, headers=dict(headers), json=self.data)
+#         print(res.json())
+#
+#
+# if __name__ == "__main__":
+#
+#     testsuite = unittest.TestSuite()
+#     testsuite.addTest(Account("test_A_addProduct"))
+#     result = unittest.TextTestRunner(verbosity=2).run(testsuite)
+#     if result.wasSuccessful:
+#         sys.exit(0)
+#     else:
+#         sys.exit(len(result.failures))
+#
+# if __name__ == '__main__':
+#     # rand = ['a','b','c','d','e','f','g','h']
+#     # for i in range(1,10):
+#     #     print(choice(rand))
+#     idefine = random.randint(1000, 9999)
+#     onlyId = str(idefine) + str(datetime.datetime.now().month) + str(datetime.datetime.now().day)
+#     print(onlyId)
+#
+#     month = datetime.datetime.now().month%10
+#     phone = "13"+str(month)+str(random.randint(1000,9999))+str(random.randint(1000,9999))
+#     print(phone)
+#
+

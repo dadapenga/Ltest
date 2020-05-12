@@ -1,0 +1,100 @@
+syntax="proto3";
+
+package nlpPositionProfile;
+option go_package="proto";
+option java_multiple_files = true;
+
+import "profile.proto";
+
+service CVAggregation {
+    rpc Compute(CVAggregationRequest) returns (CVAggregationResponse) {}
+}
+
+enum WorkDuraType {
+    BELOW_ONE_YEAR = 0;
+    ONE2THREE_YEARS = 1;
+    THREE2FIVE_YEARS = 2;
+    BEYOUND_FIVE_YEARS = 3;
+}
+
+message CVAggregationRequest {
+    string job_func = 1;
+    // 城市id，对于直辖市必须是直辖市的城市id(不能是省id)，新版id
+    int32 plc_id = 2;
+    WorkDuraType work_dura = 3;
+}
+
+message CVAggregationResponse {
+    int32 err_no = 1;
+    string err_msg = 2;
+    CVAggregationResponseResults results = 3;
+}
+message CVAggregationResponseResults {
+    profile.Axis1Profile upon_profile_from_cv = 1;
+}
+
+service JDAnalysis {
+    rpc Compute(JDAnalysisRequest) returns (JDAnalysisResponse) {}
+}
+
+message JobDescription {
+    string description = 1;
+    string requirement = 2;
+    string corporation_name = 3; //发布jd的公司的名字
+    string job_func = 4;
+}
+
+message JDAnalysisRequest {
+    JobDescription jd = 1;
+}
+message JDAnalysisResponse {
+    int32 err_no = 1;
+    string err_msg = 2;
+    JDAnalysisResponseResults results = 3;
+}
+message JDAnalysisResponseResults {
+    profile.Axis1Profile description = 1;
+    profile.Axis1Profile requirement = 2;
+
+    //用于存放JD解析时生成的jd feature信息和管理岗识别信息，并返回给工程端，服务端不存放该数据
+    profile.AxisExtraProfile axis_extra_profile = 3; 
+}
+
+service UnderProfile {
+    rpc Compute(UnderProfileRequest) returns (UnderProfileResponse) {}
+}
+
+message UnderProfileRequest {
+    string job_func = 1;
+    profile.Axis1Profile upon_profile_from_cv = 2;
+    profile.AxisExtraProfile axis_extra_profile = 3;
+}
+message UnderProfileResponse {
+    int32 err_no = 1;
+    string err_msg = 2;
+    UnderProfileResponseResults results = 3;
+}
+message UnderProfileResponseResults {
+    profile.Axis1Profile under_profile = 1;
+    profile.AxisExtraProfile axis_extra_profile = 2;
+}
+
+service GenAxis2Axis3Profile {
+    rpc Compute(GenAxis2Axis3ProfileRequest) returns (GenAxis2Axis3ProfileResponse) {}
+}
+
+message GenAxis2Axis3ProfileRequest {
+    profile.Axis1Profile axis1_profile = 1;
+    
+    // 工程端传入，用于服务端生成全画像的额外画像信息（目前包含jd feature 和 管理岗识别结果）
+    profile.AxisExtraProfile axis_extra_profile = 2; 
+}
+
+message GenAxis2Axis3ProfileResponse {
+    int32 err_no = 1;
+    string err_msg = 2;
+    GenAxis2Axis3ProfileResponseResults results = 3;
+}
+message GenAxis2Axis3ProfileResponseResults {
+    profile.Profile full_profile = 1;
+}

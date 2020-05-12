@@ -1,0 +1,772 @@
+// -----------------------------------------说明-----------------------------------------
+// 此proto为画像定义，岗位画像和人才画像所共用，整体维度解释参考https://shimo.im/sheet/2oIaRFoeQskWezXP/
+// 通用说明：
+// 1. 所有字段都包含Base这个基础属性，Base.preference表示岗位画像中对字段的偏好(优先/必须/不限)
+// 2. 字段的设计中，有若干的类型同时包含了值和范围，例如IntegerValue，值表示了人才画像中的具体属性取值，min~max的范围则表示岗位画像中对相应字段的要求
+// 3. 由于是岗位画像人才画像共用，部分字段存在冗余设计、同字段不同释义的情况,具体请参考字段注释
+// 4. 关于字段缺省的判断，岗位画像使用之前 先判断字段中的base.preference是不是None，如果是None说明岗位对该字段没有要求;如果不是None，再去取相应的字段值
+// --------------------------------------------------------------------------------------
+syntax = "proto3";
+package profile;
+option go_package="proto";
+option java_multiple_files = true;
+
+// 画像
+message Profile {
+  // 一级维度画像
+  Axis1Profile axis1 = 1;
+  // 二级维度画像
+  Axis2Profile axis2 = 2;
+  // 三级维度画像
+  Axis3Profile axis3 = 3;
+  // 新增画像维度
+  AxisExtraProfile axisExtra = 4;
+}
+
+//-----------------------------------------Sub Profile-----------------------------------------
+// 一级维度画像
+message Axis1Profile {
+  Gender gender = 1;// 性别
+  Age age = 2;// 年龄
+  repeated StringType interests = 3;// 爱好
+  Marital marital = 4;// 婚姻状况
+  StringType religion = 5;// 宗教信仰
+  PoliticalStatus political_status = 6;// 政治面貌
+  Location native_location = 7;// 主要成长所在地
+  Location live_location = 8;// 居住位置
+
+  // 岗位画像表示岗位本身的位置(仅HR修正)
+  Location work_location = 9;// 工作位置
+
+  // 岗位画像填充了城市名和城市id
+  // 人才画像填充了城市名、城市id、省份名、省份id
+  Location account_location = 10;// 户口
+
+  FloatType detail_degree = 11; // 简历详实程度
+  repeated StringType self_remarks = 12;// 自评关键字
+  repeated StringType other_remarks = 13;// 他拼关键字
+
+  // 学历、学校、专业字段
+  // 对岗位画像，JD解析, 对于学习、学校、专业可能有若干需求，例如:最高学历专业是计算机或通信工程或信息安全
+  // 对岗位画像，JD解析，填写17~19
+  // 对岗位画像，cv聚合, 填写14~19
+  // 人才画像，第一学历为高中之后的第一段教育经历（本科/专科）。
+  repeated School first_school = 14;// 第一学历学校
+  repeated Major first_major = 15;// 第一学历专业
+  repeated Degree first_degree = 16;// 第一学历
+  repeated School highest_school = 17;// 最高学历学校
+  repeated Major highest_major = 18;// 最高学历专业
+  repeated Degree highest_degree = 19;// 最高学历
+
+  BooleanType oversea_edu = 20;// 留学经历
+
+  // 岗位画像：对培训经历的要求，preference优先
+  repeated Training trainings = 21;// 培训经历
+
+  // 岗位画像，仅hr修正
+  HoppingFreq hopping_freq = 22;// 跳槽频度
+
+  // depature reasons only for changing corp
+  repeated DepartureReason departure_reasons = 23;// 离职原因
+  // work experience
+  repeated WorkExperience work_exps = 24; // 工作经历
+
+  // 岗位画像:岗位本身的职能,不是对候选者的职能要求,可能是多个(base.score不同),粒度到四级职能,preference必须
+  repeated JobFunction job_functions = 25;// 职能
+
+  // 岗位画像：岗位本身的职衔(仅填写1个)，preference必须
+  // 人才画像：每段工作经历有一个职级，使用workexp_id来对应
+  repeated JobTitle job_titles = 26;// 职衔
+
+  // 岗位画像表示岗位本身的职级
+  // 人才画像，每段工作经历有一个职级，使用workexp_id来对应
+  repeated JobLevel job_levels = 27;// 职级
+
+  // 人才画像：每段工作经历有一个职级和对应时间，使用workexp_id来对应
+  repeated Promotion promotion_curve = 28;// 晋升曲线
+
+  // 岗位画像：发布岗位的公司信息，preference必须
+  // 人才画像：当前工作经历对应的公司
+  Corporation current_corp = 29;// 所在公司及标签
+
+  // 岗位画像: 对候选者的要求
+  // 人才画像：过往工作经历对应的公司
+  repeated Corporation former_corps = 30;// 过往任职公司
+
+  // 人才画像：累计工作时间，单位是月
+  IntegerType work_duration = 31;// 工作年限
+
+  // 人才画像：最近一段工作经历（不一定是当前的工作经历）的时间，单位是月。
+  IntegerType last_corp_duration = 32;// 最近一家公司司龄
+
+  // 人才画像：累计的行业年限，单位是月。行业的粒度可能是不同层级的，上下级行业的年限没有合并。
+  // 岗位画像: 单位是月，min、max取值范围为0-99*12，min的默认值是0，max的默认值是99*12。
+  repeated IndustryDuration industry_durations = 33;// 行业年限
+
+  // 人才画像：累计的职能年限，单位是月。粒度是四级职能。
+  // 岗位画像：1/2/3级职能一定存在，四级职能id/name可能为空；
+  // 岗位画像: 单位是月，min、max取值范围为0-99*12，min的默认值是0，max的默认值是99*12。
+  repeated FunctionDuration function_durations = 34;// 职能年限
+
+  // 人才画像：累计的管理岗年限，单位是月。
+  // 岗位画像: 单位是月，min、max取值范围为0-99*12，min的默认值是0，max的默认值是99*12。
+  IntegerType manage_duration = 35;// 管理岗年限
+
+
+  // 人才画像表示此人当前管理的团队人数，仅针对当前在职的工作经历。
+  // 岗位画像表示JD的岗位本身需要管理多少人(仅hr修正)
+  ManageSize cur_manage_size = 36;// 当前团队管理规模
+
+  ManageSize max_manage_size = 37; // 最大管理团队规模
+
+  // 岗位画像, 表示候选者管理团队规模的要求(repeated中只有一个元素)，范围默认值：min-0, max-1000000
+  // 人才画像表示此人团队管理的曲线
+  repeated ManageSize manage_size_curve = 38;// 团队管理经验曲线
+
+  repeated Skill pro_skills = 39;// 专业技能
+  repeated Skill common_skills = 40;// 通用技能
+  repeated Language languages = 41;// 语言
+
+  // 人才画像：salary中的数值，单位是元，可能是一个具体的值（value），也可能是一个范围[min, max]。
+  Salary current_salary = 42;// 最近薪资水平
+  
+  repeated Salary expection_salary_curve = 43;// 期望薪资曲线
+  repeated Corporation posted_corps = 44;// 投过这些公司
+  repeated Corporation favored_corps = 45;// 被这些公司喜欢
+  StringType expected_jobs = 46;// 期望岗位
+  repeated Award major_achivements = 47;// 重大成果或荣誉
+  repeated Award awards = 48; // 作品和奖项
+  repeated Certificate certificates = 49;// 证书
+  repeated ProfTitle prof_titles = 50;// 职称
+
+  // 岗位画像，仅通过hr修正
+  repeated KeyExperience key_exps = 51; // 关键经历
+
+  BooleanType startup_exp = 52; // 创业经历
+  repeated Project projects = 53; // 项目经历
+  PersonItem achivement_motivation = 54;// 成就动机
+  PersonItem influence_motivation = 55;// 影响动机
+  PersonItem affinity_motivation = 56;// 亲和动机
+  repeated PersonItem job_choice_values = 57;// 工作选择价值观
+  PromotionMotivation promotion_motivations = 58; // 晋升动力
+  PersonItem industry_career_plans = 59;// 行业职业规划
+  PersonItem corp_scale_career_plans = 60; // 组织规模职业规划
+  PersonItem corp_type_career_plans = 61; // 组织类型职业规划
+  PersonItem function_career_plans = 62; // 职能领域职业规划
+  repeated PersonItem role_preference = 63;// 角色偏好
+  repeated PersonItem personal_type = 64;// 性格类型
+  repeated PersonItem role_type = 65;// 角色类型
+  repeated PersonItem qualities = 66;// 18项素质
+  Performance performance = 67;// 绩效
+  repeated PersonItem potential = 68; // 潜力
+  IntegerType logical_thinking = 69; // 认知能力-思维逻辑
+  IntegerType language_learning = 70; // 认知能力-语言能力
+  IntegerType math_potential = 71; // 认知能力-数字能力
+  repeated EducationExperience edu_exps = 72; // 教育经历
+  JobLevel job_level_category = 73; // 职级类型(屠龙刀用)  0:1~8, 1:9~12,  2:13~15, 3:16~18, 4:19~20,  5:>=21
+}
+
+// 二级维度画像
+message Axis2Profile {
+  repeated PersonItem qualities = 1;     // 素质
+  repeated PersonItem personal_type = 2; // 性格类型
+  repeated Skill skills = 3;             // 技能
+  repeated PersonItem values = 4;        // 价值观
+  PersonalGrowth personal_growth = 5;    // 个人成长性
+  Stability stability = 6;               // 稳定性
+  PastAchievement past_achievement = 7;  // 过往成就
+  CareerInclination career_inclination = 8; // 职业倾向
+  LeadershipPotential leadership_potential = 9; // 领导潜力
+}
+
+// 三级维度画像
+message Axis3Profile {
+  // 发展建议&风险:  name是素质名称, id是素质id,  value是六宫格位置
+  // value定义:
+  //     1 : 性格高 能力高
+  //     2 : 性格中 能力低
+  //     3 : 性格低 能力高
+  //     4 : 性格高 能力低
+  //     5 : 性格中 能力高
+  //     6 : 性格低 能力低
+  repeated PersonItem development_advice_risk = 1;
+
+  TeamPreference team_preference = 2;  // 团队偏好
+  PlatformPreference platform_preference = 3;  // 平台偏好
+  CareerOpportunity career_opportunity = 4;  // 职场机遇
+}
+
+message AxisExtraProfile {
+  JDCVFeatureType feature = 1; //feature,人岗匹配使用
+  // 岗位类型
+  // 岗位画像：只存在一个值，表示本岗位是管理岗位或者普通岗位
+  // 人才画像：可能存在多个值，每个对应人才画像里的一个工作经历
+  repeated PositionType position_type = 2;
+}
+
+message PositionType {
+  Base base = 1;
+  enum Type {
+    UNKNOWN = 0;
+    ORDINARY = 1; // 普通岗位
+    MANAGEMENT = 2; // 管理岗位
+  }
+  Type type = 2;
+  string workexp_id = 3;
+}
+
+message JDCVFeatureType {
+  Base base = 1;
+  repeated FeatureLevel feature_level = 2;
+}
+
+message FeatureLevel {
+  string feature_details = 1;
+  string workexp_id = 2;  //关联的工作经历ID（仅在关联了工作经历时有效）
+}
+
+//-----------------------------------------Common-----------------------------------------
+// 仅为JD使用
+enum PreferenceType {
+  NONE = 0;  // 表示在此字段上没有要求
+  PREFERRED = 1;  // 优先
+  MUST = 2;  // 限定
+}
+
+// 所有画像都需要有的基础字段
+message Base {
+  PreferenceType preference = 1;  // 画像维度偏好
+  float score = 2;  // 画像维度分数，表示画像在这个维度上打分（例如，技能的熟练程度，等）
+  float weight = 3;  // 画像维度权重，表示这个维度对画像的重要程度
+}
+
+// 整数类型，可以表示单一值（主要是人才画像中）、范围值（主要是岗位画像中）
+message IntegerValue {
+  int32 value = 1;  // 确定的取值
+  // 默认只填写min 表示 min~无穷；只填写max 表示0~max，[min, max]，具体字段可能会另有详细说明。
+  int32 min = 2;
+  int32 max = 3;
+}
+
+// 用于整数类型画像维度
+message IntegerType {
+  Base base = 1;
+  IntegerValue value = 2;
+}
+
+// 浮点数类型，可以表示单一值（主要是人才画像中）、范围值（主要是岗位画像中）
+message FloatValue {
+  float value = 1;
+  // [min, max]
+  float min = 2;
+  float max = 3;
+}
+
+// 用于浮点类型画像维度
+message FloatType {
+  Base base = 1;
+  FloatValue value = 2;
+}
+
+// 用于字符串类型画像维度
+message StringType {
+  Base base = 1;
+  string value = 2;
+}
+
+// 用于布尔值类型画像维度
+message BooleanType {
+  Base base = 1;
+  bool value = 2;
+}
+
+message DateTime {
+  int32 year = 1;
+  int32 month = 2;
+  int32 day = 3;
+}
+
+// 日期类型，可以表示单一值、日期范围（不填写value）
+message DateRange {
+  DateTime value = 1;
+  // 只有start没有end表示至今，都存在时[start, end]
+  DateTime start = 2;
+  DateTime end = 3;
+}
+
+// 技能\语言熟练度
+enum ProficiencyLevel {
+  UNKNOWN = 0;
+  // 一般
+  MODEST = 1;
+  // 良好
+  COMPETENT = 2;
+  // 熟练
+  GOOD = 3;
+  // 精通
+  EXPERT = 4;
+}
+
+//-----------------------------------------Fields-----------------------------------------
+// 性别
+message Gender {
+  Base base = 1;
+  enum Value {
+    UNKNOWN = 0;
+    MALE = 1;
+    FEMALE = 2;    
+  }
+  Value value = 2;
+}
+
+// 年龄
+message Age {
+  Base base = 1;
+  IntegerValue value = 2;
+}
+
+// 婚姻状况
+message Marital {
+  Base base = 1;
+  enum Value {
+    UNKNOWN = 0;  // 未知
+    YES = 1;      // 已婚
+    NO = 2;       // 未婚
+  }
+  Value value = 2;
+}
+
+// 政治面貌
+message PoliticalStatus {
+  Base base = 1;
+  enum Type {
+    UNKNOWN = 0;           // 未知
+    YOUTH_LEAGUE = 1;      // 共青团员
+    PARTY_MEMBER = 2;      // 中共党员
+    PRE_PARTY_MEMEBER = 3; // 中共预备党员
+    MASSES = 4;            // 群众
+  }
+  Type type = 2;
+}
+
+// 位置
+// 人才画像中使用的是第二版的省份ID、城市ID，这些ID>=1000000。
+// 岗位画像中使用新版id体系,>=1000000。
+message Location {
+  Base base = 1;
+  int32 province_id = 2;     // 省份ID
+  string province_name = 3;  // 省份名称
+  int32 city_id = 4;         // 城市ID
+  string city_name = 5;      // 城市名称
+  string address = 6;        // 地址
+}
+
+// 对于人才画像，School中字段具有一致性，即各个字段描述的是同一所学校
+// 对于岗位画像，JD解析, School中字段只填写部分，(1)只填base/id/name表示对某一学校的要求 (2)只填写base/tags(此时id=0或不存在)表示对某些一类的学校的要求(目前仅能表达对211学校要求)(一个School仅包含1个tag)
+// 对岗位画像，CV聚合，(1)填写base/id/name/tags表达某个学校 (2)只填base/tags表达某一类学校(支持211/985/海外/海外名校)(一个School仅包含1个tag)
+message School {
+  Base base = 1;
+  
+  int32 id = 2;     // gsystem学校库实体ID
+  string name = 3;  // gsystem学校库实体名称
+  
+  enum Tag {
+    NONE = 0;        // 无
+    IS_985 = 1;      // 985
+    IS_211 = 2;      // 211
+    IS_OVERSEA = 3;  // 海外
+    IS_NEWS100 = 4;  // NEWS100
+  }
+  // 一个学校可以包括上面的多个标签
+  repeated Tag tags = 4;
+
+  // 仅在关联了教育经历的情况下需要填这个字段
+  string eduexp_id = 5;
+}
+
+message Major {
+  Base base = 1;
+  int32 id = 2;     // gsystem专业id
+  string name = 3;  // gsystem专业名称
+
+  // 仅在关联了教育经历的情况下需要填这个字段
+  string eduexp_id = 4;
+}
+
+// 对于人才画像，Degree内填写的字段具有一致性，即  id是该学历的id，name是该学历的name，is_full_time表示该学历是否全日制
+// 对于岗位画像，JD解析, Degree内只填写部分字段，填写了base/id/name表示对某个学历的要求
+// 对于岗位画像，cv聚合 (1)只填写base/id/name表示学历  (2)只填写base/is_full_time(此时id=0)表示是否全日制
+message Degree {
+  Base base = 1;
+  int32 id = 2;           // gsystem学历ID
+  string name = 3;        // gsystem学历名称
+  bool is_full_time = 4;  // 是否为全日制学历
+
+  // 仅在关联了教育经历的情况下需要填这个字段
+  string eduexp_id = 5;
+}
+
+// 培训经历
+// 岗位画像，仅填写了name
+message Training {
+  Base base = 1;
+  string name = 2;  // 培训经历名称（原始）
+  DateRange duration = 3;  // 培训时间范围
+}
+
+// 跳槽频度
+// 岗位画像：表示否定要求，比如：2年内3跳的人不要，value=Pair{years=2, freq=3}
+// 人才画像：2年内3跳（year=2, freq=3）
+message HoppingFreq {
+  Base base = 1;
+  
+  // hopping frequencies in years.
+  message Pair {
+    int32 years = 1;
+    int32 freq = 2;
+  }
+  // define max 50 years' freq list
+  repeated Pair value = 2;
+}
+
+// 职能
+message JobFunction {
+  Base base = 1;
+  // level 4 function id
+  int32 id = 2;
+  // level 4 function name
+  string name = 3;
+  int32 lvl1_id = 4;  // 一级职能ID
+  int32 lvl2_id = 5;  // 二级职能ID
+  int32 lvl3_id = 6;  // 三级职能ID
+  string workexp_id = 7;  // 关联的工作经历ID（仅在关联了工作经历时有效）
+}
+
+// 职衔
+message JobTitle {
+  Base base = 1;
+  int32 id = 2;           // 职衔ID
+  string name = 3;        // 职衔名称
+  string workexp_id = 4;  // 关联的工作经历ID（仅在关联了工作经历时有效）
+}
+
+// 职级
+message JobLevel {
+  Base base = 1;
+  int32 id = 2;           // 职级ID（现在无id）
+  string name = 3;        // 职级名称
+  string workexp_id = 4;  // 关联的工作经历ID（仅在关联了工作经历时有效）
+}
+
+message Industry {
+  Base base = 1;
+  int32 id = 2;     // gsystem行业ID
+  string name = 3;  // gsystem行业名称
+}
+
+// 晋升
+message Promotion {
+  Base base = 1;
+  DateRange range = 2;  // 时间范围
+  JobLevel level = 3;   // 职级
+}
+
+// 管理规模
+message ManageSize {
+  Base base = 1;
+  DateRange date = 2;     // 时间范围
+  IntegerValue size = 3;  // 人数规模（确定值或范围）
+}
+
+// 薪水
+message Salary {
+  Base base = 1;
+  IntegerValue value = 2;  // 确定值或范围，单位是“元”
+  DateRange date = 3;      // 时间范围
+}
+
+// 岗位画像，(1)表达对候选者要求，填写部分字段，例如：
+//              1.1 base/id/name表示要求候选者在某个公司工作过
+//                  1.1.1 JD解析
+//                  1.1.2 CV聚合是cv上统计的公司
+//              1.2 base/type表示要求候选者在某个type的公司工作过
+//                  1.2.1 JD解析无
+//                  1.2.2 CV聚合有
+//              1.3 base/size表示要求候选者选择在某个size的公司工作过
+//                  1.3.1 JD解析无
+//                  1.3.2 CV聚合有
+//              1.4 base/capital表示要求候选者在某个融资情况的公司工作过
+//                  1.4.1 JD解析无
+//                  1.4.2 CV聚合有
+// 岗位画像，(2)发布JD的公司的信息，填写公司id/name/industries
+message Corporation {
+  Base base = 1;
+
+  int32 id = 2;     // 公司库ID
+  string name = 3;  // 公司库名称
+  repeated Industry industries = 4;  // 行业（可以有多个）
+
+  // 公司性质
+  enum Type {
+    OTHER_TYPE = 0;
+    FOREIGN_EU_USA = 1; // 外资（欧美）
+    FOREIGN_NON_EU_USA = 2; // 外资（非欧美）
+    FOREIGN = 3; // 外资
+    JOINT_VENTURE = 4; // 合资
+    STATE_OWNED = 5; // 国企
+    PRIVATE = 6; // 民营
+    GOV_AFFIL = 7; // 事业单位
+    FOREIGN_REPRESENTATIVE = 8; // 外企代表处
+    GOV_OFFICE = 9;  // 政府机关
+    NON_PROFIT_ORG = 10; // 非盈利性机构
+    JOINT_STOCK_CORP = 11; // 股份合作制企业
+  }
+  Type type = 5;
+
+  // 公司规模
+  enum Size {
+    SIZE_OTHER = 0;
+    SIZE_0_50 = 1;
+    SIZE_50_150 = 2;
+    SIZE_150_500 = 3;
+    SIZE_500_1000 = 4;
+    SIZE_1000_5000 = 5;
+    SIZE_OVER_5000 = 6;
+  }
+  Size size = 6;
+
+  // 融资情况
+  enum CapitalSituation {
+    OTHER_FINANCING = 0;    
+    NO_FINANCING_NEED = 1;  // 不需要融资
+    UNFINANCING = 2;        // 未融资
+    ANGEL_ROUND = 3;        // 天使轮
+    A_ROUND = 4;            // A轮
+    B_ROUND = 5;            // B轮
+    C_ROUND = 6;            // C轮
+    D_AND_PLUS_ROUND = 7;   // D轮及以上
+    LISTED = 8;             // 上市公司
+    SECRECY = 9;            // 保密
+  }
+  CapitalSituation capital_situation = 7;
+  // 仅在关联了工作经历情况下填充
+  string workexp_id = 8;
+}
+
+// 技能
+message Skill {
+  Base base = 1;
+  int32 id = 2;     // 技能实体ID
+  string name = 3;  // 技能实体名称
+  ProficiencyLevel level = 4; // 技能熟练程度 
+}
+
+// 语言
+message Language {
+  Base base = 1;
+  int32 id = 2;     // 语言实体ID（现在未提供ID）
+  string name = 3;  // 语言实体名称
+  ProficiencyLevel level = 4; // 语言熟练程度
+}
+
+// 证书
+message Certificate {
+  Base base = 1;
+  int32 id = 2;     // 证书实体ID
+  string name = 3;  // 证书实体名称
+}
+
+// 奖项
+message Award {
+  Base base = 1;
+  string name = 2;  // 名称
+
+  // 奖项级别
+  enum Level {
+    OTHER = 0;
+    INTERNATIONAL = 1;  // 国际级
+    NATIONAL = 2;       // 国家级
+    PROVINCE = 3;       // 省级
+  }
+  Level level = 3;
+}
+
+// 职称
+// 岗位画像，无ID,仅有name
+// 岗位画像，JD解析目前都是优先, CV聚合可能有必须
+message ProfTitle {
+  Base base = 1;
+  int32 id = 2;      // 职称ID
+  string name = 3;   // 职称名称
+}
+
+// 关键经历
+message KeyExperience {
+  Base base = 1;
+  int32 id = 2;
+  // name由咨询团队线下定义，具体请见画像整体释义的说明页面
+  string name = 3;   // 名称，同一类型的关键经历名称不能重复
+  enum Type {
+    OTHER = 0;
+    MANAGEMENT = 1;
+    BUSINESS = 2;
+  }
+  // 关键经历的类型：管理类、项目类
+  Type type = 4;
+}
+
+// 项目
+message Project {
+  Base base = 1;
+  DateRange date_range = 2;   // 项目时间范围
+  string name = 3;            // 项目名称
+  string description = 4;     // 项目描述
+  string responsibility = 5;  // 项目职责
+}
+
+// 离职原因
+message DepartureReason {
+  Base base = 1;
+  string workexp_id = 2;    // 局部的工作经历id
+  string value = 3;         // 原因文本
+}
+
+message WorkExperience {
+  // 仅存每个工作经历的起止时间，其中的职能、职级、职衔、公司等信息会存在其他字段
+  DateTime start = 1;  // 开始时间
+  DateTime end = 2;  // 如果不存在end，表示“至今”
+  string workexp_id = 3;
+  Base base = 4;
+}
+
+message EducationExperience {
+  // 现在仅保持每段教育经历的起止时间
+  string eduexp_id = 1;
+  DateTime start = 2;  // 开始时间
+  DateTime end = 3;  // 如果不存在end，表示“至今”
+  Base base = 4;
+}
+
+// 行业年限
+message IndustryDuration {
+  Base base = 1;
+  // 行业
+  Industry industry = 2;
+  // 年限
+  IntegerValue duration = 3;
+}
+
+// 职能年限
+// 岗位画像，JD解析，仅填四级职能id
+// 岗位画像，CV聚合，仅填三级职能id/name(?)
+message FunctionDuration {
+  Base base = 1;
+  JobFunction function = 2;
+  IntegerValue duration = 3;
+}
+
+// 性格标签
+message PersonItem {
+  Base base = 1;
+  // id表示item的全局id(暂无)
+  int32 id = 2;
+  // name表示item的显示文本
+  string name = 3;
+  // value表示item的取值
+  int32 value = 4;
+  
+}
+
+// 晋升动力
+message PromotionMotivation {
+  Base base = 1;
+  // 是否选择晋升
+  bool if_promote = 2;
+  // 如果选择晋升，存放晋升动力
+  repeated PersonItem promotion_reasons =3;
+  // 如果选择不晋升，存放原因
+  string no_promotion_reason = 4;
+}
+
+message Performance {
+  Base base = 1;
+  enum Type {
+    OTHER = 0;       // 未知或其他
+    TOP20 = 1;       // 前20%
+    TOP20_40 = 2;    // 前20%-前40%
+    TOP40_60 = 3;    // 前40%-前60%
+    TOP60_80 = 4;    // 前60-前80%
+    TOP80_100 = 5;   // 后20%
+  }
+  Type type = 2;
+}
+
+// 个人成长性
+message PersonalGrowth {
+  Base base = 1;
+  FloatValue growth_motivation = 2;  // 成长动力
+  FloatValue growth_potential = 3;   // 成长潜力
+}
+
+// 稳定性
+message Stability {
+  Base base = 1;
+  FloatValue value = 2;
+}
+
+// 过往成就
+message PastAchievement {
+  Base base = 1;
+  // 学历：1: 低; 2：中; 3：高
+  FloatValue education_level = 2;  // 学历
+  FloatValue growth_speed = 3;     // 成长速度
+  FloatValue achievement = 4;      // 成就
+}
+
+// 职业倾向
+message CareerInclination {
+  Base base = 1;
+  PersonItem industry_career_plans = 2;   // 行业职业规划
+  PersonItem corp_scale_career_plans = 3; // 组织规模职业规划
+  PersonItem corp_type_career_plans = 4;  // 组织类型职业规划
+  PersonItem function_career_plans = 5;   // 职能领域职业规划
+  repeated PersonItem role_preference = 6;// 角色偏好
+}
+
+// 领导潜力
+message LeadershipPotential {
+  Base base = 1;
+  FloatValue value = 2;
+}
+
+// 团队偏好
+message TeamPreference {
+  Base base = 1;
+  repeated PersonItem team_culture = 2;  // 团队文化
+  repeated PersonItem leader_style = 3;  // 领导风格
+}
+
+// 平台偏好
+message PlatformPreference {
+  Base base = 1;
+  
+  /* 偏好定义：
+  - startup 初创 产品研发
+  - growth 成长 拓展渠道、抓市场
+  - stable 稳定 战略扩张
+  - strive 1、奋斗型文化。鼓励内部竞争和创新，鼓励冒险。竞争性较强、产品更新快
+  - harmony 2、和谐型文化。把工作与生活并重，强调员工内部和谐。竞争性不强、工作稳定
+  - flexible 3、灵活型文化。通过内部资源的整合以适应新技术、产品和服务的要求，从而能率先满足新的市场需求，通常组织比较扁平。
+  - bureau 4、科层型文化。强调可靠、稳定、规范和等级，注重标准，职责明确，按部就班就可以完成任务
+  - open 5、开放型文化：通过与外部伙伴建立生态圈，形成联盟，更多强调合作、共享、联结，实现共赢。
+  - closed 6、封闭型文化：强调通过外部竞争，获取自身利益最大化，对外部变化关注度不高，恪守惯例，遵循既有的做法和经验，团队多样化程度低。
+  */
+  repeated PersonItem prefs = 2;
+}
+
+// 职场机遇
+message CareerOpportunity {
+  Base base = 1;
+  FloatValue ability = 2;  // 能力
+  FloatValue willingness = 3;  // 意愿
+}
