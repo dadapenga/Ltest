@@ -187,7 +187,7 @@ if __name__ == '__main__':
         saveAllUrl(matchHrefs)  # 保存所有的url到   urlListAll.csv
         saveUrl(matchHrefs)  # 保存这一层的url  全局变量level控制
 
-# 读取保存的url
+# 读取保存的urlsadasd
 
     for level in range(1, power):
         # urlsList = readCSV("data\\urlList" + str(level) + ".csv")  # list承接的下这么大的数据量？ 5w+
